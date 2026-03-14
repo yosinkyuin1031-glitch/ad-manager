@@ -1,56 +1,21 @@
 "use client";
 
-import { useState } from "react";
-
-interface Props {
-  anthropicKey: string;
-  onSaveKey: (key: string) => void;
-}
-
-export default function SettingsTab({ anthropicKey, onSaveKey }: Props) {
-  const [key, setKey] = useState(anthropicKey);
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    onSaveKey(key.trim());
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
+export default function SettingsTab() {
   return (
     <div className="space-y-6 max-w-lg mx-auto">
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h3 className="font-bold text-gray-800 text-lg mb-4">API設定</h3>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Anthropic APIキー
-            </label>
-            <p className="text-xs text-gray-500 mb-2">
-              広告文AIチェック機能に使用します。
-              <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline ml-1">
-                Anthropic Console
-              </a>
-              で取得してください。
-            </p>
-            <input
-              type="password"
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              placeholder="sk-ant-..."
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button
-            onClick={handleSave}
-            className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              saved ? "bg-green-500 text-white" : "bg-blue-600 text-white hover:bg-blue-700"
-            }`}
-          >
-            {saved ? "保存しました" : "保存"}
-          </button>
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm font-medium text-green-800 mb-1">APIキーは環境変数で設定済み</p>
+          <p className="text-xs text-green-600">
+            Anthropic APIキーはサーバー側の環境変数（<code className="bg-green-100 px-1 rounded">.env.local</code>）で安全に管理されています。
+            フロントエンドにAPIキーが露出することはありません。
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            キーの変更が必要な場合は、<code className="bg-gray-100 px-1 rounded">.env.local</code> ファイルの
+            <code className="bg-gray-100 px-1 rounded">ANTHROPIC_API_KEY</code> を更新してください。
+          </p>
         </div>
       </div>
 

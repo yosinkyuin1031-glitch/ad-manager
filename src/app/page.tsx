@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { TabType, ManualInputData, DailyMetrics } from "@/lib/types";
-import { getManualData, addManualData, deleteManualData, saveManualData, manualDataToDailyMetrics, getAnthropicKey, saveAnthropicKey } from "@/lib/storage";
+import { getManualData, addManualData, deleteManualData, saveManualData, manualDataToDailyMetrics } from "@/lib/storage";
 import Dashboard from "@/components/Dashboard";
 import AdCheckTab from "@/components/AdCheckTab";
 import ManualInputTab from "@/components/ManualInputTab";
@@ -12,13 +12,11 @@ export default function Home() {
   const [tab, setTab] = useState<TabType>("dashboard");
   const [manualData, setManualData] = useState<ManualInputData[]>([]);
   const [metrics, setMetrics] = useState<DailyMetrics[]>([]);
-  const [anthropicKey, setAnthropicKey] = useState("");
 
   useEffect(() => {
     const data = getManualData();
     setManualData(data);
     setMetrics(manualDataToDailyMetrics(data));
-    setAnthropicKey(getAnthropicKey());
   }, []);
 
   const refreshData = (data: ManualInputData[]) => {
@@ -40,11 +38,6 @@ export default function Home() {
     const existing = getManualData();
     saveManualData([...existing, ...entries]);
     refreshData(getManualData());
-  };
-
-  const handleSaveKey = (key: string) => {
-    saveAnthropicKey(key);
-    setAnthropicKey(key);
   };
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
@@ -88,7 +81,7 @@ export default function Home() {
 
       {/* メインコンテンツ */}
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {tab === "dashboard" && <Dashboard metrics={metrics} />}
+        {tab === "dashboard" && <Dashboard metrics={metrics} manualData={manualData} />}
         {tab === "check" && <AdCheckTab metrics={metrics} manualData={manualData} />}
         {tab === "manual" && (
           <ManualInputTab
@@ -98,7 +91,7 @@ export default function Home() {
             onBulkImport={handleBulkImport}
           />
         )}
-        {tab === "settings" && <SettingsTab anthropicKey={anthropicKey} onSaveKey={handleSaveKey} />}
+        {tab === "settings" && <SettingsTab />}
       </main>
     </div>
   );

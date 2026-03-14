@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { prompt, apiKey } = await req.json();
+  const { prompt } = await req.json();
 
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "APIキーが設定されていません" }, { status: 400 });
+    return NextResponse.json(
+      { error: "サーバー側でANTHROPIC_API_KEYが設定されていません。.env.localを確認してください。" },
+      { status: 500 }
+    );
   }
 
   try {

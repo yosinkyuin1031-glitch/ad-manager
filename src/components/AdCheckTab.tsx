@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { AdCheckResult, DailyMetrics, ManualInputData } from "@/lib/types";
 import { checkAdPerformance, generateAdCopyCheckPrompt } from "@/lib/adChecker";
-import { getAnthropicKey } from "@/lib/storage";
 
 interface Props {
   metrics: DailyMetrics[];
@@ -32,11 +31,6 @@ export default function AdCheckTab({ metrics, manualData }: Props) {
 
   const handleAdCopyCheck = async () => {
     if (!adText.trim()) return;
-    const apiKey = getAnthropicKey();
-    if (!apiKey) {
-      setCopyError("設定タブでAnthropic APIキーを入力してください");
-      return;
-    }
 
     setChecking(true);
     setCopyError("");
@@ -47,17 +41,29 @@ export default function AdCheckTab({ metrics, manualData }: Props) {
       const res = await fetch("/api/check-ad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, apiKey }),
+        body: JSON.stringify({ prompt }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}: サーバーエラーが発生しました` }));
+        throw new Error(errData.error || `HTTP ${res.status}: サーバーエラーが発生しました`);
+      }
+
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       if (data.result) {
         setCopyResult(data.result);
+      } else if (data.rawText) {
+        setCopyError("AIからの応答をJSON形式で解析できませんでした。再度お試しください。");
       } else {
-        setCopyError("分析結果を取得できませんでした");
+        setCopyError("分析結果を取得できませんでした。しばらくしてから再度お試しください。");
       }
     } catch (e) {
-      setCopyError(e instanceof Error ? e.message : "エラーが発生しました");
+      if (e instanceof TypeError && e.message === "Failed to fetch") {
+        setCopyError("ネットワークエラー: サーバーに接続できません。インターネット接続を確認してください。");
+      } else {
+        setCopyError(e instanceof Error ? e.message : "予期しないエラーが発生しました。");
+      }
     } finally {
       setChecking(false);
     }
@@ -159,11 +165,19 @@ export default function AdCheckTab({ metrics, manualData }: Props) {
             disabled={checking || !adText.trim()}
             className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
           >
-            {checking ? "AIが分析中..." : "広告文をAIチェック"}
+            {checking ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                AIが分析中...
+              </span>
+            ) : "広告文をAIチェック"}
           </button>
 
           {copyError && (
-            <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{copyError}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-xs font-medium text-red-800 mb-1">エラーが発生しました</p>
+              <p className="text-xs text-red-600">{copyError}</p>
+            </div>
           )}
 
           {copyResult && (

@@ -3,7 +3,6 @@ import { GoogleAdsConfig, ManualInputData, DailyMetrics } from "./types";
 const STORAGE_KEYS = {
   config: "ad-manager-config",
   manualData: "ad-manager-manual-data",
-  anthropicKey: "ad-manager-anthropic-key",
 };
 
 // Google広告設定
@@ -38,16 +37,6 @@ export function deleteManualData(index: number) {
   const existing = getManualData();
   existing.splice(index, 1);
   saveManualData(existing);
-}
-
-// Anthropic APIキー
-export function getAnthropicKey(): string {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem(STORAGE_KEYS.anthropicKey) || "";
-}
-
-export function saveAnthropicKey(key: string) {
-  localStorage.setItem(STORAGE_KEYS.anthropicKey, key);
 }
 
 // 手動データからDailyMetricsに変換
