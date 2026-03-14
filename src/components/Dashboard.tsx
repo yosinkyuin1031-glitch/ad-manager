@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { DailyMetrics, ManualInputData } from "@/lib/types";
+import { useState, useEffect } from "react";
+import { DailyMetrics, ManualInputData, KPISettings, DEFAULT_KPI_SETTINGS } from "@/lib/types";
+import { getKPISettings } from "@/lib/storage";
 
 interface Props {
   metrics: DailyMetrics[];
@@ -11,6 +12,11 @@ interface Props {
 export default function Dashboard({ metrics, manualData }: Props) {
   const [viewDays, setViewDays] = useState<7 | 30>(7);
   const [hoveredBar, setHoveredBar] = useState<{ index: number; type: string } | null>(null);
+  const [kpi, setKpi] = useState<KPISettings>(DEFAULT_KPI_SETTINGS);
+
+  useEffect(() => {
+    setKpi(getKPISettings());
+  }, []);
 
   if (metrics.length === 0) {
     return (
@@ -45,10 +51,10 @@ export default function Dashboard({ metrics, manualData }: Props) {
     { label: "総クリック数", value: totalClicks.toLocaleString(), sub: "回", color: "bg-green-50 text-green-700" },
     { label: "総CV数", value: totalConversions.toLocaleString(), sub: "件", color: "bg-purple-50 text-purple-700" },
     { label: "総コスト", value: `¥${Math.round(totalCost).toLocaleString()}`, sub: "", color: "bg-red-50 text-red-700" },
-    { label: "平均CTR", value: `${avgCtr.toFixed(2)}%`, sub: "目安3-5%", color: "bg-cyan-50 text-cyan-700" },
-    { label: "平均CPC", value: `¥${Math.round(avgCpc).toLocaleString()}`, sub: "目安100-500円", color: "bg-orange-50 text-orange-700" },
-    { label: "平均CVR", value: `${avgCvr.toFixed(2)}%`, sub: "目安3-8%", color: "bg-indigo-50 text-indigo-700" },
-    { label: "平均CPA", value: totalConversions > 0 ? `¥${Math.round(avgCpa).toLocaleString()}` : "—", sub: totalConversions > 0 ? "目安3,000-10,000円" : "CV未発生", color: "bg-pink-50 text-pink-700" },
+    { label: "平均CTR", value: `${avgCtr.toFixed(2)}%`, sub: `目安${kpi.ctr_good}%以上`, color: avgCtr >= kpi.ctr_good ? "bg-green-50 text-green-700" : avgCtr >= kpi.ctr_warn ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-700" },
+    { label: "平均CPC", value: `¥${Math.round(avgCpc).toLocaleString()}`, sub: `目安¥${kpi.cpc_warn}以下`, color: avgCpc <= kpi.cpc_warn ? "bg-green-50 text-green-700" : avgCpc <= kpi.cpc_bad ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-700" },
+    { label: "平均CVR", value: `${avgCvr.toFixed(2)}%`, sub: `目安${kpi.cvr_good}%以上`, color: avgCvr >= kpi.cvr_good ? "bg-green-50 text-green-700" : avgCvr >= kpi.cvr_warn ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-700" },
+    { label: "平均CPA", value: totalConversions > 0 ? `¥${Math.round(avgCpa).toLocaleString()}` : "—", sub: totalConversions > 0 ? `目安¥${kpi.cpa_warn.toLocaleString()}以下` : "CV未発生", color: totalConversions === 0 ? "bg-pink-50 text-pink-700" : avgCpa <= kpi.cpa_warn ? "bg-green-50 text-green-700" : avgCpa <= kpi.cpa_bad ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-700" },
   ];
 
   // チャート用データ

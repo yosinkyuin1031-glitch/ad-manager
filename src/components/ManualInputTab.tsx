@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { ManualInputData } from "@/lib/types";
+import { getAdsConfig } from "@/lib/storage";
 
 interface Props {
   data: ManualInputData[];
@@ -247,6 +248,73 @@ export default function ManualInputTab({ data, onAdd, onDelete, onBulkImport }: 
             className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
           >
             データを追加
+          </button>
+        </div>
+      </div>
+
+      {/* Google Ads API取得 */}
+      <div className="bg-white rounded-xl shadow-sm p-5">
+        <h3 className="font-bold text-gray-800 mb-3">Google広告API取得</h3>
+        <p className="text-xs text-gray-500 mb-3">
+          設定タブでAPI連携を設定済みの場合、指定期間のデータを自動取得します。
+        </p>
+        <div className="flex gap-2 items-end">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">開始日</label>
+            <input
+              type="date"
+              id="api-from"
+              defaultValue={new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0]}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">終了日</label>
+            <input
+              type="date"
+              id="api-to"
+              defaultValue={new Date().toISOString().split("T")[0]}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            />
+          </div>
+          <button
+            onClick={async () => {
+              const config = getAdsConfig();
+              if (!config?.customerId || !config?.refreshToken || !config?.clientId || !config?.clientSecret) {
+                alert("先に設定タブでGoogle広告のAPI設定を完了してください。");
+                return;
+              }
+              const from = (document.getElementById("api-from") as HTMLInputElement).value;
+              const to = (document.getElementById("api-to") as HTMLInputElement).value;
+              try {
+                const res = await fetch("/api/google-ads", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    customerId: config.customerId,
+                    clientId: config.clientId,
+                    clientSecret: config.clientSecret,
+                    refreshToken: config.refreshToken,
+                    dateFrom: from,
+                    dateTo: to,
+                  }),
+                });
+                const result = await res.json();
+                if (result.error) {
+                  alert(`エラー: ${result.error}`);
+                } else if (result.data && result.data.length > 0) {
+                  onBulkImport(result.data);
+                  alert(`${result.count}件のデータを取得しました`);
+                } else {
+                  alert("取得できるデータがありませんでした。");
+                }
+              } catch {
+                alert("API接続に失敗しました。ネットワークを確認してください。");
+              }
+            }}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 whitespace-nowrap"
+          >
+            API取得
           </button>
         </div>
       </div>

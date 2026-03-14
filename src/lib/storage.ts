@@ -1,8 +1,9 @@
-import { GoogleAdsConfig, ManualInputData, DailyMetrics } from "./types";
+import { GoogleAdsConfig, ManualInputData, DailyMetrics, KPISettings, DEFAULT_KPI_SETTINGS } from "./types";
 
 const STORAGE_KEYS = {
   config: "ad-manager-config",
   manualData: "ad-manager-manual-data",
+  kpiSettings: "ad-manager-kpi-settings",
 };
 
 // Google広告設定
@@ -37,6 +38,17 @@ export function deleteManualData(index: number) {
   const existing = getManualData();
   existing.splice(index, 1);
   saveManualData(existing);
+}
+
+// KPI設定
+export function getKPISettings(): KPISettings {
+  if (typeof window === "undefined") return DEFAULT_KPI_SETTINGS;
+  const raw = localStorage.getItem(STORAGE_KEYS.kpiSettings);
+  return raw ? { ...DEFAULT_KPI_SETTINGS, ...JSON.parse(raw) } : DEFAULT_KPI_SETTINGS;
+}
+
+export function saveKPISettings(settings: KPISettings) {
+  localStorage.setItem(STORAGE_KEYS.kpiSettings, JSON.stringify(settings));
 }
 
 // 手動データからDailyMetricsに変換

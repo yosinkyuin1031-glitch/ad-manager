@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { AdCheckResult, DailyMetrics, ManualInputData } from "@/lib/types";
+import { useState, useEffect } from "react";
+import { AdCheckResult, DailyMetrics, ManualInputData, KPISettings, DEFAULT_KPI_SETTINGS } from "@/lib/types";
 import { checkAdPerformance, generateAdCopyCheckPrompt } from "@/lib/adChecker";
+import { getKPISettings } from "@/lib/storage";
 
 interface Props {
   metrics: DailyMetrics[];
@@ -25,9 +26,14 @@ export default function AdCheckTab({ metrics, manualData }: Props) {
   const [checking, setChecking] = useState(false);
   const [copyResult, setCopyResult] = useState<AdCopyResult | null>(null);
   const [copyError, setCopyError] = useState("");
+  const [kpiSettings, setKpiSettings] = useState<KPISettings>(DEFAULT_KPI_SETTINGS);
+
+  useEffect(() => {
+    setKpiSettings(getKPISettings());
+  }, []);
 
   // パフォーマンスチェック
-  const perfResults = checkAdPerformance(metrics, manualData);
+  const perfResults = checkAdPerformance(metrics, manualData, kpiSettings);
 
   const handleAdCopyCheck = async () => {
     if (!adText.trim()) return;

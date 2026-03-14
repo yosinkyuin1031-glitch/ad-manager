@@ -102,4 +102,26 @@ export interface ManualInputData {
   memo?: string;
 }
 
+export interface KPISettings {
+  ctr_good: number;    // CTR良好ライン (%)
+  ctr_warn: number;    // CTR警告ライン (%)
+  cpc_warn: number;    // CPC警告ライン (円)
+  cpc_bad: number;     // CPC危険ライン (円)
+  cvr_good: number;    // CVR良好ライン (%)
+  cvr_warn: number;    // CVR警告ライン (%)
+  cpa_warn: number;    // CPA警告ライン (円)
+  cpa_bad: number;     // CPA危険ライン (円)
+}
+
+export const DEFAULT_KPI_SETTINGS: KPISettings = {
+  ctr_good: 3,
+  ctr_warn: 2,
+  cpc_warn: 300,
+  cpc_bad: 500,
+  cvr_good: 4,
+  cvr_warn: 2,
+  cpa_warn: 8000,
+  cpa_bad: 15000,
+};
+
 export type TabType = "dashboard" | "campaigns" | "check" | "manual" | "settings";

@@ -1,9 +1,10 @@
-import { AdCheckResult, ManualInputData, DailyMetrics } from "./types";
+import { AdCheckResult, ManualInputData, DailyMetrics, KPISettings, DEFAULT_KPI_SETTINGS } from "./types";
 
 // 整体院・鍼灸院向けの広告チェックロジック
 export function checkAdPerformance(
   dailyMetrics: DailyMetrics[],
-  manualData: ManualInputData[]
+  manualData: ManualInputData[],
+  kpi: KPISettings = DEFAULT_KPI_SETTINGS
 ): AdCheckResult[] {
   const results: AdCheckResult[] = [];
 
@@ -28,23 +29,21 @@ export function checkAdPerformance(
   const avgCvr = totalClicks > 0 ? (totalConversions / totalClicks) * 100 : 0;
   const avgCpa = totalConversions > 0 ? totalCost / totalConversions : 0;
 
-  // 1. CTRチェック（整体院の平均CTRは3-5%）
-  if (avgCtr < 2) {
+  // 1. CTRチェック
+  if (avgCtr < kpi.ctr_warn) {
     results.push({
       type: "error",
       category: "CTR（クリック率）",
       title: `CTRが非常に低い: ${avgCtr.toFixed(2)}%`,
-      detail:
-        "整体院のリスティング広告のCTR目安は3〜5%です。広告文の見直し、キーワードの絞り込み、広告表示オプション（電話番号・サイトリンク等）の追加を検討してください。",
+      detail: `CTR目安は${kpi.ctr_good}%以上です。広告文の見直し、キーワードの絞り込み、広告表示オプション（電話番号・サイトリンク等）の追加を検討してください。`,
       impact: "high",
     });
-  } else if (avgCtr < 3) {
+  } else if (avgCtr < kpi.ctr_good) {
     results.push({
       type: "warning",
       category: "CTR（クリック率）",
       title: `CTRがやや低い: ${avgCtr.toFixed(2)}%`,
-      detail:
-        "CTRの改善余地があります。広告見出しに「地域名+症状名」を入れる、限定感のある表現（初回限定、〇月限定）を試すと効果的です。",
+      detail: "CTRの改善余地があります。広告見出しに「地域名+症状名」を入れる、限定感のある表現を試すと効果的です。",
       impact: "medium",
     });
   } else {
@@ -57,22 +56,21 @@ export function checkAdPerformance(
     });
   }
 
-  // 2. CPCチェック（整体院の目安: 100〜500円）
-  if (avgCpc > 500) {
+  // 2. CPCチェック
+  if (avgCpc > kpi.cpc_bad) {
     results.push({
       type: "error",
       category: "CPC（クリック単価）",
       title: `クリック単価が高い: ¥${Math.round(avgCpc)}`,
-      detail:
-        "整体院のCPC目安は100〜500円です。競合が多いキーワードを使用している可能性があります。ロングテールキーワード（「長居 腰痛 整体」等）の追加や、部分一致の除外キーワード設定を検討してください。",
+      detail: `CPC目安は¥${kpi.cpc_warn}以下です。ロングテールキーワードの追加や、除外キーワード設定を検討してください。`,
       impact: "high",
     });
-  } else if (avgCpc > 300) {
+  } else if (avgCpc > kpi.cpc_warn) {
     results.push({
       type: "warning",
       category: "CPC（クリック単価）",
       title: `クリック単価がやや高め: ¥${Math.round(avgCpc)}`,
-      detail: "入札戦略の見直しや、品質スコア改善（広告文とLPの関連性向上）でCPC低減が可能です。",
+      detail: "入札戦略の見直しや、品質スコア改善でCPC低減が可能です。",
       impact: "medium",
     });
   } else {
@@ -85,24 +83,22 @@ export function checkAdPerformance(
     });
   }
 
-  // 3. CVRチェック（整体院の目安: 3〜8%）
+  // 3. CVRチェック
   if (totalClicks >= 50) {
-    if (avgCvr < 2) {
+    if (avgCvr < kpi.cvr_warn) {
       results.push({
         type: "error",
         category: "CVR（コンバージョン率）",
         title: `CVRが非常に低い: ${avgCvr.toFixed(2)}%`,
-        detail:
-          "LP（ランディングページ）の改善が必要です。電話番号の目立つ配置、口コミの掲載、初回限定オファーの訴求、予約フォームの簡素化を検討してください。",
+        detail: `CVR目安は${kpi.cvr_good}%以上です。LP改善、CTA配置、口コミ掲載、予約フォームの簡素化を検討してください。`,
         impact: "high",
       });
-    } else if (avgCvr < 4) {
+    } else if (avgCvr < kpi.cvr_good) {
       results.push({
         type: "warning",
         category: "CVR（コンバージョン率）",
         title: `CVRに改善余地あり: ${avgCvr.toFixed(2)}%`,
-        detail:
-          "LPのファーストビュー改善、CTA（予約ボタン）の配置見直し、患者インタビュー動画の追加などが効果的です。",
+        detail: "LPのファーストビュー改善、CTA配置見直し、患者インタビュー動画の追加が効果的です。",
         impact: "medium",
       });
     } else {
@@ -116,24 +112,22 @@ export function checkAdPerformance(
     }
   }
 
-  // 4. CPAチェック（整体院の目安: 3,000〜10,000円）
+  // 4. CPAチェック
   if (totalConversions > 0) {
-    if (avgCpa > 15000) {
+    if (avgCpa > kpi.cpa_bad) {
       results.push({
         type: "error",
         category: "CPA（獲得単価）",
         title: `獲得単価が非常に高い: ¥${Math.round(avgCpa)}`,
-        detail:
-          "1件の予約獲得にかかるコストが高すぎます。LTVが見合うか確認してください。キーワードの見直し、LP改善、予約導線の最適化が急務です。",
+        detail: `CPA目安は¥${kpi.cpa_warn.toLocaleString()}以下です。キーワード見直し、LP改善、予約導線の最適化が急務です。`,
         impact: "high",
       });
-    } else if (avgCpa > 8000) {
+    } else if (avgCpa > kpi.cpa_warn) {
       results.push({
         type: "warning",
         category: "CPA（獲得単価）",
         title: `獲得単価がやや高め: ¥${Math.round(avgCpa)}`,
-        detail:
-          "整体院のCPA目安は3,000〜10,000円です。リピート率が高ければ許容範囲ですが、改善の余地があります。",
+        detail: `CPA目安は¥${kpi.cpa_warn.toLocaleString()}以下です。リピート率が高ければ許容範囲ですが改善の余地があります。`,
         impact: "medium",
       });
     } else {
