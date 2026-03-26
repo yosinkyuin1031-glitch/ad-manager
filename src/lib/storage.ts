@@ -1,9 +1,10 @@
-import { GoogleAdsConfig, ManualInputData, DailyMetrics, KPISettings, DEFAULT_KPI_SETTINGS } from "./types";
+import { GoogleAdsConfig, ManualInputData, DailyMetrics, KPISettings, DEFAULT_KPI_SETTINGS, BudgetSettings, DEFAULT_BUDGET_SETTINGS, MonthlyReport } from "./types";
 
 const STORAGE_KEYS = {
   config: "ad-manager-config",
   manualData: "ad-manager-manual-data",
   kpiSettings: "ad-manager-kpi-settings",
+  budgetSettings: "ad-manager-budget-settings",
 };
 
 // Google広告設定
@@ -51,6 +52,17 @@ export function saveKPISettings(settings: KPISettings) {
   localStorage.setItem(STORAGE_KEYS.kpiSettings, JSON.stringify(settings));
 }
 
+// 予算設定
+export function getBudgetSettings(): BudgetSettings {
+  if (typeof window === "undefined") return DEFAULT_BUDGET_SETTINGS;
+  const raw = localStorage.getItem(STORAGE_KEYS.budgetSettings);
+  return raw ? { ...DEFAULT_BUDGET_SETTINGS, ...JSON.parse(raw) } : DEFAULT_BUDGET_SETTINGS;
+}
+
+export function saveBudgetSettings(settings: BudgetSettings) {
+  localStorage.setItem(STORAGE_KEYS.budgetSettings, JSON.stringify(settings));
+}
+
 // 手動データからDailyMetricsに変換
 export function manualDataToDailyMetrics(data: ManualInputData[]): DailyMetrics[] {
   const grouped: Record<string, DailyMetrics> = {};
@@ -84,4 +96,49 @@ export function manualDataToDailyMetrics(data: ManualInputData[]): DailyMetrics[
       cpa: g.conversions > 0 ? g.cost / g.conversions : 0,
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// 月別レポート生成
+export function generateMonthlyReports(data: ManualInputData[], avgRevenuePerVisit: number): MonthlyReport[] {
+  const grouped: Record<string, ManualInputData[]> = {};
+  for (const d of data) {
+    const month = d.date.slice(0, 7); // "2026-03"
+    if (!grouped[month]) grouped[month] = [];
+    grouped[month].push(d);
+  }
+
+  return Object.entries(grouped)
+    .map(([month, items]) => {
+      const totalImpressions = items.reduce((s, d) => s + d.impressions, 0);
+      const totalClicks = items.reduce((s, d) => s + d.clicks, 0);
+      const totalConversions = items.reduce((s, d) => s + d.conversions, 0);
+      const totalCost = items.reduce((s, d) => s + d.cost, 0);
+      const estimatedRevenue = totalConversions * avgRevenuePerVisit;
+      const roi = totalCost > 0 ? ((estimatedRevenue - totalCost) / totalCost) * 100 : 0;
+
+      // キャンペーン別集計
+      const campMap: Record<string, { cost: number; clicks: number; conversions: number }> = {};
+      for (const d of items) {
+        if (!campMap[d.campaignName]) campMap[d.campaignName] = { cost: 0, clicks: 0, conversions: 0 };
+        campMap[d.campaignName].cost += d.cost;
+        campMap[d.campaignName].clicks += d.clicks;
+        campMap[d.campaignName].conversions += d.conversions;
+      }
+
+      return {
+        month,
+        totalCost,
+        totalImpressions,
+        totalClicks,
+        totalConversions,
+        avgCtr: totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0,
+        avgCpc: totalClicks > 0 ? totalCost / totalClicks : 0,
+        avgCvr: totalClicks > 0 ? (totalConversions / totalClicks) * 100 : 0,
+        avgCpa: totalConversions > 0 ? totalCost / totalConversions : 0,
+        estimatedRevenue,
+        roi,
+        campaignBreakdown: Object.entries(campMap).map(([name, v]) => ({ name, ...v })),
+      };
+    })
+    .sort((a, b) => b.month.localeCompare(a.month));
 }

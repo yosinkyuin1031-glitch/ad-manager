@@ -124,4 +124,36 @@ export const DEFAULT_KPI_SETTINGS: KPISettings = {
   cpa_bad: 15000,
 };
 
-export type TabType = "dashboard" | "campaigns" | "check" | "manual" | "settings";
+export interface BudgetSettings {
+  monthlyBudget: number;       // 月額予算（円）
+  alertThreshold: number;      // アラート閾値（%）例: 80 → 80%で通知
+  avgRevenuePerVisit: number;  // 来院1件あたり平均売上（円）
+}
+
+export const DEFAULT_BUDGET_SETTINGS: BudgetSettings = {
+  monthlyBudget: 100000,
+  alertThreshold: 80,
+  avgRevenuePerVisit: 8000,
+};
+
+export interface MonthlyReport {
+  month: string;             // "2026-03"
+  totalCost: number;
+  totalImpressions: number;
+  totalClicks: number;
+  totalConversions: number;
+  avgCtr: number;
+  avgCpc: number;
+  avgCvr: number;
+  avgCpa: number;
+  estimatedRevenue: number;
+  roi: number;               // (売上 - 広告費) / 広告費 * 100
+  campaignBreakdown: Array<{
+    name: string;
+    cost: number;
+    clicks: number;
+    conversions: number;
+  }>;
+}
+
+export type TabType = "dashboard" | "roi" | "report" | "check" | "manual" | "settings";

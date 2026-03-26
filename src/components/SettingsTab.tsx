@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { KPISettings, DEFAULT_KPI_SETTINGS } from "@/lib/types";
-import { getKPISettings, saveKPISettings, getAdsConfig, saveAdsConfig } from "@/lib/storage";
+import { KPISettings, DEFAULT_KPI_SETTINGS, BudgetSettings, DEFAULT_BUDGET_SETTINGS } from "@/lib/types";
+import { getKPISettings, saveKPISettings, getAdsConfig, saveAdsConfig, getBudgetSettings, saveBudgetSettings } from "@/lib/storage";
 
 export default function SettingsTab() {
   const [kpi, setKpi] = useState<KPISettings>(DEFAULT_KPI_SETTINGS);
@@ -12,11 +12,14 @@ export default function SettingsTab() {
     clientId: "",
     clientSecret: "",
   });
+  const [budgetSettings, setBudgetSettings] = useState<BudgetSettings>(DEFAULT_BUDGET_SETTINGS);
   const [saved, setSaved] = useState(false);
   const [adsSaved, setAdsSaved] = useState(false);
+  const [budgetSaved, setBudgetSaved] = useState(false);
 
   useEffect(() => {
     setKpi(getKPISettings());
+    setBudgetSettings(getBudgetSettings());
     const config = getAdsConfig();
     if (config) {
       setGoogleAds({
@@ -50,6 +53,12 @@ export default function SettingsTab() {
     });
     setAdsSaved(true);
     setTimeout(() => setAdsSaved(false), 2000);
+  };
+
+  const handleSaveBudget = () => {
+    saveBudgetSettings(budgetSettings);
+    setBudgetSaved(true);
+    setTimeout(() => setBudgetSaved(false), 2000);
   };
 
   const kpiFields: { key: keyof KPISettings; label: string; unit: string; desc: string }[] = [
@@ -106,6 +115,78 @@ export default function SettingsTab() {
           className="mt-4 w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
         >
           {saved ? "保存しました" : "KPI設定を保存"}
+        </button>
+      </div>
+
+      {/* 予算・ROI設定 */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h3 className="font-bold text-gray-800 text-lg mb-4">予算・ROI設定</h3>
+        <p className="text-xs text-gray-500 mb-4">
+          月額予算とアラート閾値、来院1件あたりの平均売上を設定します。ROI計算やアラートに使用されます。
+        </p>
+
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <label className="text-sm font-medium text-gray-700">月額広告予算</label>
+              <p className="text-[10px] text-gray-400">この金額に近づくとアラートが表示されます</p>
+            </div>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={budgetSettings.monthlyBudget}
+                onChange={(e) => setBudgetSettings({ ...budgetSettings, monthlyBudget: Number(e.target.value) })}
+                className="w-32 border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-right"
+                step={10000}
+                min={0}
+              />
+              <span className="text-xs text-gray-500 w-6">円</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <label className="text-sm font-medium text-gray-700">アラート閾値</label>
+              <p className="text-[10px] text-gray-400">予算のこの割合に達したら通知</p>
+            </div>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={budgetSettings.alertThreshold}
+                onChange={(e) => setBudgetSettings({ ...budgetSettings, alertThreshold: Number(e.target.value) })}
+                className="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-right"
+                step={5}
+                min={50}
+                max={100}
+              />
+              <span className="text-xs text-gray-500 w-6">%</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <label className="text-sm font-medium text-gray-700">来院1件あたり平均売上</label>
+              <p className="text-[10px] text-gray-400">ROI計算の推定売上に使用します</p>
+            </div>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={budgetSettings.avgRevenuePerVisit}
+                onChange={(e) => setBudgetSettings({ ...budgetSettings, avgRevenuePerVisit: Number(e.target.value) })}
+                className="w-32 border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-right"
+                step={1000}
+                min={0}
+              />
+              <span className="text-xs text-gray-500 w-6">円</span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={handleSaveBudget}
+          className="mt-4 w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+        >
+          {budgetSaved ? "保存しました" : "予算設定を保存"}
         </button>
       </div>
 
